@@ -53,6 +53,15 @@ int main(int argc, char* argv[]){
             if (iFile == -1){
                 return errorHandler(argv[i]);
             }
+
+            //step 3: write to our output
+            if (writeToOutput(iFile) == -1){
+                return errorHandler(argv[i]);
+            }
+            //condition when we do good
+            else{
+                fprintf(stder, "")
+            }
         }
     }
 }
