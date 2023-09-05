@@ -11,6 +11,7 @@ int errorHandler(char* problem){
     else{
         fprintf(stderr, "%s could not be open for reading: %s\n", strerror(errno));
     }
+    return -1;
 }
 //apparently this is supposed to be convention
 int main(int argc, char* argv[]){
@@ -20,11 +21,38 @@ int main(int argc, char* argv[]){
     int oFile = 1; //input and output, set to their default values
 
     //step 1: Check for output file flag
-    if (argc > 1 && argv[2] == "-o"){
-        oFile = open(argv[3], O_RDWR | O_CREAT | O_TRUNC, 0666);
-        //error case: we kill the program
-        if (oFile == -1){
-            return errorHandler(argv[3]);
+    if (argc > 1)
+        if (argv[1] == "-o"){
+            //error: there's not enough arguments for this
+            if (argc == 2){
+                fprintf(stderr, "No output file specified.\n");
+                return -1;
+            }
+            oFile = open(argv[3], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            //error: the file is not openable
+            if (oFile == -1){
+                return errorHandler(argv[3]);
+            }
+        }   //at this point, we have an acceptable output file, whether stdout or file. 
+
+        //step 2: read all the relevant files
+        for (int i = 2; i < argc; ++i){
+            //case: "-" is an input
+            if (argv[i] == "-"){
+                iFile = 0;
+            }
+            //case: we actually want "-" as a filename
+            else if (argv[i] == "--"){
+                iFile = open("-", O_RDONLY);    
+            }
+            //case: actual normal files
+            else{
+                iFile = open(argv[i], O_RDONLY);
+            }
+            //error handler
+            if (iFile == -1){
+                return errorHandler(argv[i]);
+            }
         }
     }
 }
