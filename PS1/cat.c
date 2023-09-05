@@ -16,7 +16,8 @@ int errorHandler(char* problem){
 int main(int argc, char* argv[]){
     char buffer[4092]; //buffer for the writing of characters
     int rBytes, wBytes; //counter for number of bytes read and wrote
-    int iFile, oFile; //input and output file
+    int iFile = 0;
+    int oFile = 1; //input and output, set to their default values
 
     //step 1: Check for output file flag
     if (argc > 1 && argv[2] == "-o"){
@@ -25,8 +26,5 @@ int main(int argc, char* argv[]){
         if (oFile == -1){
             return errorHandler(argv[3]);
         }
-    }
-    else{
-
     }
 }
