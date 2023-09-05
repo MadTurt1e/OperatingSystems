@@ -19,9 +19,11 @@ int main(int argc, char* argv[]){
     int rBytes, wBytes; //counter for number of bytes read and wrote
     int iFile = 0;
     int oFile = 1; //input and output, set to their default values
-
+    int bytesWritten = 0;
+    int linesWritten = 0;
+    int tmp = 0;
     //step 1: Check for output file flag
-    if (argc > 1)
+    if (argc > 1){
         if (argv[1] == "-o"){
             //error: there's not enough arguments for this
             if (argc == 2){
@@ -54,13 +56,28 @@ int main(int argc, char* argv[]){
                 return errorHandler(argv[i]);
             }
 
-            //step 3: write to our output
-            if (writeToOutput(iFile) == -1){
-                return errorHandler(argv[i]);
+            //read all the 4096 bytes we wanted
+            for (tmp != 0){
+                tmp = read(iFile, buf, 4096);
+                if (tmp == -1){
+                    return errorHandler(argv[i]);
+                }
+                //check for the number of lines inside
+                for(int j = 0; j < length(buf); ++j){
+                    if (buf[j] == '\n'){
+                        ++linesWritten;
+                    }
+                }
+                //write to the the relevant files
+                tmp = write(oFile, buf, 4096);
+                if (tmp == -1){
+                    return errorHandler(argv[3]);
+                }
             }
+
             //condition when we do good
             else{
-                fprintf(stder, "")
+                fprintf(stderr, "Filename: %s\nBytes transferred: %d\nNumber of lines:%d\n", argv[i], bytesWritten, linesWritten);
             }
         }
     }
