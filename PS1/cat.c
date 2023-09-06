@@ -15,7 +15,7 @@ int errorHandler(char* problem){
 }
 //apparently this is supposed to be convention
 int main(int argc, char* argv[]){
-    char buffer[4096]; //buffer for the writing of characters
+    char buf[4096]; //buffer for the writing of characters
     int rBytes, wBytes; //counter for number of bytes read and wrote
     int iFile = 0;
     int oFile = 1; //input and output, set to their default values
@@ -57,7 +57,7 @@ int main(int argc, char* argv[]){
             }
 
             //read all the 4096 bytes we wanted
-            for (tmp != 0){
+            while (tmp != 0){
                 tmp = read(iFile, buf, 4096);
                 if (tmp == -1){
                     return errorHandler(argv[i]);
@@ -75,10 +75,8 @@ int main(int argc, char* argv[]){
                 }
             }
 
-            //condition when we do good
-            else{
-                fprintf(stderr, "Filename: %s\nBytes transferred: %d\nNumber of lines:%d\n", argv[i], bytesWritten, linesWritten);
-            }
+            //If we get here, we did well. 
+            fprintf(stderr, "Filename: %s\nBytes transferred: %d\nNumber of lines:%d\n", argv[i], bytesWritten, linesWritten);
         }
         //that should basically be it. 
     }
