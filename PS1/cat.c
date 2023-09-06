@@ -15,7 +15,7 @@ int errorHandler(char* problem){
 }
 //apparently this is supposed to be convention
 int main(int argc, char* argv[]){
-    char buffer[4092]; //buffer for the writing of characters
+    char buffer[4096]; //buffer for the writing of characters
     int rBytes, wBytes; //counter for number of bytes read and wrote
     int iFile = 0;
     int oFile = 1; //input and output, set to their default values
@@ -80,5 +80,6 @@ int main(int argc, char* argv[]){
                 fprintf(stderr, "Filename: %s\nBytes transferred: %d\nNumber of lines:%d\n", argv[i], bytesWritten, linesWritten);
             }
         }
+        //that should basically be it. 
     }
 }
