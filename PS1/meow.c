@@ -18,8 +18,11 @@ int errorHandler(char *problem)
     return -1;
 }
 
-int main(int argc, char *argv[])
+int main()
 {
+    int argc = 4;
+    char *argv[] = {"a.out", "-o", "output", "meow.c"};
+    
     char buf[4096];     // buffer for the writing of characters
     int rBytes, wBytes; // counter for number of bytes read and wrote
     int iFile = 0;
