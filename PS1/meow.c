@@ -24,9 +24,10 @@ int main(int argc, char* argv[]){
     int linesWritten = 1; //the first line is also a line. 
     int tmp = 0;
     char *iFileName = "<standard input>";
-    char *oFileName;
+    char *oFileName = "";
+
     // step 1: Check for output file flag
-    if (argv[1] == "-o" && argc > 1){
+    if (argc > 1 && strcmp(argv[1], "-o") == 0){
         // error: there's not enough arguments for this
         if (argc == 2){
             fprintf(stderr, "No output file specified.\n");
@@ -42,20 +43,19 @@ int main(int argc, char* argv[]){
     } // at this point, we have an acceptable output file, whether stdout or file.
     // step 2: read all the relevant files
     for (int i = 0; i < argc; ++i){
-        //if -o is active, skip the first two args
-        if (oFile != 1 && i <= 2){
+        //if -o is active, skip the first 3 args (input file, -o, output file name). If we have more than one arg, skip the first arg. 
+        if ((oFile != 1 && i < 3) || (i < 1 && argc > 1)){
             continue;
         }
-
         // we only do this section if there are inputs
         if (argc != 1){
             // case: "-" is an input
-            if (argv[i] == "-"){
+            if (strcmp(argv[i], "-") == 0){
                 iFile = 0;
                 iFileName = "<standard input>";
             }
             // case: we actually want "-" as a filename
-            else if (argv[i] == "--"){
+            else if (strcmp(argv[i], "--") == 0){
                 iFile = open("-", O_RDONLY);
                 iFileName = "-";
             }
@@ -69,7 +69,6 @@ int main(int argc, char* argv[]){
                 return errorHandler(argv[i]);
             }
         }
-
         // read all the 4096 bytes we wanted
         do{
             tmp = read(iFile, buf, 4096);
@@ -93,7 +92,7 @@ int main(int argc, char* argv[]){
         }while (tmp != 0 && iFile != 0);
 
         // If we get here, we have done well
-        fprintf(stderr, "\nFilename: %s\nBytes transferred: %d\nLines written:%d\n", iFileName, bytesWritten, linesWritten);
+        fprintf(stderr, "\nFilename: %s\nBytes written: %d\nLines written:%d\n", iFileName, bytesWritten, linesWritten);
     }
     return 0;   // that should basically be it.
 }
