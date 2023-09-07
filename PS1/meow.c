@@ -55,7 +55,7 @@ int main(int argc, char* argv[]){
                 iFileName = "<standard input>";
             }
             // case: we actually want "-" as a filename
-            else if (strcmp(argv[i], "--") == 0){
+            else if (strcmp(argv[i], "/-") == 0){
                 iFile = open("-", O_RDONLY);
                 iFileName = "-";
             }
