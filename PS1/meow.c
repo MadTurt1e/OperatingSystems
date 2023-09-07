@@ -27,6 +27,8 @@ int main(int argc, char *argv[])
     int bytesWritten = 0;
     int linesWritten = 0;
     int tmp = 0;
+    char *iFileName = "<standard input>";
+    char *oFileName;
     // step 1: Check for output file flag
     if (argv[1] == "-o" && argc > 1)
     {
@@ -37,32 +39,41 @@ int main(int argc, char *argv[])
             return -1;
         }
         oFile = open(argv[3], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+        oFileName = argv[3];
         // error: the file is not openable
         if (oFile == -1)
         {
-            return errorHandler(argv[3]);
+            return errorHandler(oFileName);
         }
     } // at this point, we have an acceptable output file, whether stdout or file.
     // step 2: read all the relevant files
-    for (int i = 2; i < argc; ++i)
+    for (int i = 0; i < argc; ++i)
     {
-        // case: no inputs
+        //if -o is active, skip the first two args
+        if (oFile != 1 && i <= 2){
+            continue;
+        }
+
+        // we only do this section if there are inputs
         if (argc != 1)
         {
             // case: "-" is an input
             if (argv[i] == "-")
             {
                 iFile = 0;
+                iFileName = "<standard input>";
             }
             // case: we actually want "-" as a filename
             else if (argv[i] == "--")
             {
                 iFile = open("-", O_RDONLY);
+                iFileName = "-";
             }
             // case: actual normal files
             else
             {
                 iFile = open(argv[i], O_RDONLY);
+                iFileName = argv[i];
             }
             // error handler
             if (iFile == -1)
@@ -70,9 +81,9 @@ int main(int argc, char *argv[])
                 return errorHandler(argv[i]);
             }
         }
-        
+
         // read all the 4096 bytes we wanted
-        while (tmp != 0)
+        do
         {
             tmp = read(iFile, buf, 4096);
             if (tmp == -1)
@@ -87,17 +98,20 @@ int main(int argc, char *argv[])
                     ++linesWritten;
                 }
             }
-            // write to the the relevant files
-            tmp = write(oFile, buf, 4096);
+            // write to the the relevant files - only go up to the specified bytes
+            tmp = write(oFile, buf, tmp);
+            bytesWritten += tmp;
+            
             if (tmp == -1)
             {
                 return errorHandler(argv[3]);
             }
-        }
+        }while (tmp != 0);
 
         // If we get here, we did well.
-        fprintf(stderr, "Filename: %s\nBytes transferred: %d\nNumber of lines:%d\n", argv[i], bytesWritten, linesWritten);
+        fprintf(stderr, "\nFilename: %s\nBytes transferred: %d\nLines written:%d\n", iFileName, bytesWritten, linesWritten);
     }
     // that should basically be it.
+
     return 0;
 }
