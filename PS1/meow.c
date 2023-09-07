@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
             {
                 return errorHandler(argv[3]);
             }
-        }while (tmp != 0);
+        }while (tmp != 0 && iFile != 0);
 
         // If we get here, we did well.
         fprintf(stderr, "\nFilename: %s\nBytes transferred: %d\nLines written:%d\n", iFileName, bytesWritten, linesWritten);
