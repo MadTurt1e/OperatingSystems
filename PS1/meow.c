@@ -93,6 +93,9 @@ int main(int argc, char* argv[]){
 
         // If we get here, we have done well
         fprintf(stderr, "\nFilename: %s\nBytes written: %d\nLines written:%d\n", iFileName, bytesWritten, linesWritten);
+    	//reset all the necessary stuff
+	linesWritten = 1;
+	bytesWritten = 0;
     }
     return 0;   // that should basically be it.
 }
