@@ -117,6 +117,7 @@ void traverse(char *dirName, FILE *fp, struct stat *fileStat)
             //if stat resolves in an error, we continue
             if (stat(path, &linkStat) < 0)
             {
+                fprintf(stderr, "\e[0;33mGetting stat of %s from %s Warning: %s\n\e[0m", linkPath, path,strerror(errno));
                 continue;
             }
             //weird file? continue
