@@ -38,7 +38,7 @@ After the fork, pid 123 (the parent process) waits for the child process to fini
 `./script.sh foobar`<br>
 How would we get the parent shell to report the exit status of the child? Is that status zero or non-zero, and why?
 
-If you changed the invocation of the shell script to `./script.sh foobar`, we can get the parent shell to report the exit status of the child by using `$?` in bash. <br>
+If you changed the invocation of the shell script to `./script.sh foobar`, we can get the parent shell to report the exit status of the child by using `$?` in bash. We can print it using `echo $?`<br>
 This variable holds the exit status of the last command that was executed (the child's exit status, in this case). <br>
 If foobar does not exist in your directory, then the exit status would be non-zero because ls -l $* would fail to find a file or directory named foobar. <br>
 If foobar does exist, then the exit status would be zero, as 0 is a success. 
