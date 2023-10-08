@@ -104,7 +104,7 @@ int execcmd(char *args[])
 	// exit implementation.
 	if (!strcmp(args[0], "exit"))
 	{
-		exit(args);
+		exitcmd(args);
 	}
 	// case of unidentified command
 	else
@@ -173,14 +173,17 @@ int exitcmd(char *args[])
 {
 	//case where no input
 	if (args[1] == NULL){
+		fprintf(stderr, "Exiting shell with exit code %d", lastCommand);
 		exit(lastCommand);
 	}
 	//other case
 	else{
+		fprintf(stderr, "Exiting shell with exit code %d", atoi(args[1]));
 		exit(atoi(args[1]));
 	}
 
 	//bad case
+	fprintf(stderr, "Exiting shell with exit code %d", lastCommand);
 	exit(lastCommand);
 	return 1;
 }
