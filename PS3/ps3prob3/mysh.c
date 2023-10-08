@@ -7,8 +7,14 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-int lineReader(char line[4096]);
-int execcmd(char *args[4096]);
+int lineReader(char line[]);
+int execcmd(char *args[]);
+
+int cdcmd(char *args[]);
+int pwdcmd();
+int exitcmd(char *args[]);
+
+int lastCommand;
 
 int main(int argc, char *argv[])
 {
@@ -24,6 +30,7 @@ int main(int argc, char *argv[])
 		iFile = fopen(argv[1], "r");
 		openAttempt = true;
 		dup2(0, iFile);
+		close(iFile); // something about clean file descriptors
 	}
 	// otherwise, we're just looking at terminal mode where we read from terminal
 
@@ -40,15 +47,16 @@ int main(int argc, char *argv[])
 	while (gets(line, 4096, stdin) != NULL)
 	{
 		// we leave this as a job for another function.
-		lineReader(line);
+		lastCommand = lineReader(line);
 		continue;
 	}
 
-	exit(0);
+	char* exitSequence[2];
+	exitcmd(exitSequence);
 }
 
 // reads something line by line, and does what's on the tin.
-int lineReader(char line[4096])
+int lineReader(char line[])
 {
 	// comments are ignored
 	if (line[0] == '#')
@@ -57,37 +65,26 @@ int lineReader(char line[4096])
 	}
 
 	char *args[4096];
-
+	char *input[4096];
+	char *output[4096];
 	//"tokenize" string using space as the delimiter
 	char *tok = strtok(line, " ");
 	/// go through the string, until we can't anymore, and add each value to the args array
-	int i = 0;
+	int argLoc = 0;
+
 	while (tok != NULL)
 	{
-		args[i++] = tok;
+		args[argLoc++] = tok;
 		tok = strtok(NULL, " ");
 	}
 	// set the final value of args to null
-	args[i] = NULL;
+	args[argLoc] = NULL;
 
-	// now for the cases
-	// We fork, so that we can run things
-	int pid = fork();
-	switch (pid)
-	{
-	case -1:
-		fprintf(stderr, "\e[0;31mFork error\e[0m");
-		return -1;
-	case 0: // child case
-		execcmd(*args);
-		exit(0); // We kill children
-	default:	 // parent case
-		// in this case, we'd continue
-		return 0;
-	}
+	// execute commands
+	execcmd(args);
 }
 
-int execcmd(char *args[4096])
+int execcmd(char *args[])
 {
 	// case: nothing is there
 	if (args[0] == NULL)
@@ -95,25 +92,95 @@ int execcmd(char *args[4096])
 		return 0;
 	}
 	// cd implmentation
-	if (strcmp(args[0], "cd"))
+	if (!strcmp(args[0], "cd"))
 	{
-		return 0;
+		return cdcmd(args);
 	}
 	// pwd implementation
-	if (strcmp(args[0], "pwd"))
+	if (!strcmp(args[0], "pwd"))
 	{
-		return 0;
+		return pwdcmd();
 	}
 	// exit implementation.
-	if (strcmp(args[0], "exit"))
+	if (!strcmp(args[0], "exit"))
 	{
+		exit(args);
 	}
 	// case of unidentified command
 	else
 	{
-		//just execute it, no implementation required. 
-		return execvp(args[0], args);
+		// just execute it, no implementation required.
+		// now for the cases
+		// We fork, so that we can run things
+		int pid = fork();
+		switch (pid)
+		{
+		case -1:
+			fprintf(stderr, "\e[0;31mFork error\e[0m");
+			return -1;
+		case 0: // child case
+		/* 
+		TODO: I/O REDIRECTION
+		I mean, how does it even work? 
+		*/
+			execvp(args[0], args);
+			exit(0); // We kill children
+		default:	 // parent case
+			// in this case, we'd continue and look for the next input
+			return 0;
+		}
 	}
+	// uhh...
+	return 1;
+}
+
+// change directory command
+int cdcmd(char *args[])
+{
+	//case for no specified path
+	if (args[1] == NULL){
+		if (chdir(getenv("HOME")) == -1){
+			fprintf(stderr, "\e[0;31mError executing chdir for HOME path %s: %s\e[0m", getenv("HOME"), strerror(errno));
+			return -1;
+		}
+		return 0;
+	}
+	//case for specified path
+	else if (chdir(args[1]) == -1){
+		fprintf(stderr, "\e[0;31mError executing chdir for %s: %s\e[0m", args[1], strerror(errno));
+		return 0;
+	}
+
 	//uhh...
+	return -1;
+}
+
+// print working directory
+int pwdcmd()
+{
+	char *buf[4096];
+	if (getcwd(buf, 4096) == NULL)
+	{
+		fprintf(stderr, "\e[0;31mError executing getcwd: %s\e[0m", strerror(errno));
+		return -1;
+	}
+	fprintf(stdout, "%s\n", buf);
+	return 0;
+}
+
+// exit
+int exitcmd(char *args[])
+{
+	//case where no input
+	if (args[1] == NULL){
+		exit(lastCommand);
+	}
+	//other case
+	else{
+		exit(atoi(args[1]));
+	}
+
+	//bad case
+	exit(lastCommand);
 	return 1;
 }
