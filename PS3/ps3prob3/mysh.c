@@ -44,13 +44,14 @@ int main(int argc, char *argv[])
 	// gaming time
 
 	// Basically, we want to be reading. Forever.
-	while (gets(line, 4096, stdin) != NULL)
+	while (gets(line, 4096, stdin) != EOF)
 	{
 		// we leave this as a job for another function.
 		lastCommand = lineReader(line);
 		continue;
 	}
 
+	fprintf(stderr, "End of file read");
 	char* exitSequence[2];
 	exitcmd(exitSequence);
 }
