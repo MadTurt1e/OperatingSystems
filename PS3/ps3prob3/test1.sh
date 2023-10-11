@@ -1,5 +1,5 @@
 #Change the line below to that it points to your shell
-#!./msh
+#!./a.exe
 echo TESTINGTESTING123 >testfile.out
 cat <testfile.out >testfile2.out
 ls -l
