@@ -13,6 +13,7 @@ int execcmd(char *args[]);
 int cdcmd(char *args[]);
 int pwdcmd();
 int exitcmd(char *args[]);
+int arbitcmd(char *args[]);
 
 int lastCommand;
 
@@ -29,7 +30,7 @@ int main(int argc, char *argv[])
 	{
 		iFile = fopen(argv[1], "r");
 		openAttempt = true;
-		dup2(0, iFile);
+		dup2(stdin, iFile);
 		close(iFile); // something about clean file descriptors
 	}
 	// otherwise, we're just looking at terminal mode where we read from terminal
@@ -109,26 +110,8 @@ int execcmd(char *args[])
 	// case of unidentified command
 	else
 	{
-		// just execute it, no implementation required.
-		// now for the cases
-		// We fork, so that we can run things
-		int pid = fork();
-		switch (pid)
-		{
-		case -1:
-			fprintf(stderr, "\e[0;31mFork error\e[0m");
-			return -1;
-		case 0: // child case
-		/* 
-		TODO: I/O REDIRECTION
-		I mean, how does it even work? 
-		*/
-			execvp(args[0], args);
-			exit(0); // We kill children
-		default:	 // parent case
-			// in this case, we'd continue and look for the next input
-			return 0;
-		}
+		//function call because it looks nicer
+		return arbitcmd(args);
 	}
 	// uhh...
 	return 1;
@@ -186,4 +169,22 @@ int exitcmd(char *args[])
 	fprintf(stderr, "Exiting shell with exit code %d", lastCommand);
 	exit(lastCommand);
 	return 1;
+}
+
+//executes (or tries to) whatever arbituary command
+int arbitcmd(char *args[]){
+	//step 1: fork
+	int pid = fork();
+	
+	//fork cases
+	switch(pid){
+		case -1:
+			fprintf(stderr, "\e[0;31mError executing fork: %s\e[0m", strerror(errno));
+			return -1;
+		case 0: //child case
+			execvp(args[0], args);
+		default:
+			//returns the first child that comes back
+			return wait(pid);
+	}
 }
