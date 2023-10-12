@@ -137,11 +137,9 @@ int cdcmd(char* args[])
   //case for specified path
   else if (chdir(args[1]) == -1){
     fprintf(stderr, "\e[0;31mError executing chdir for %s: %s\e[0m", args[1], strerror(errno));
-    return 0;
+    return 1;
   }
-
-  //uhh...
-  return 1;
+  return 0;
 }
 
 // print working directory. return 0 on success, 1 on fail.
