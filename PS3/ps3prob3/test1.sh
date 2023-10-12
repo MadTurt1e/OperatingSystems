@@ -1,5 +1,4 @@
-#Change the line below to that it points to your shell
-#!./a.exe
+#!./a.out
 echo TESTINGTESTING123 >testfile.out
 cat <testfile.out >testfile2.out
 ls -l
