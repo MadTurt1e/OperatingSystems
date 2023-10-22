@@ -40,16 +40,20 @@ int main(int argc, char *argv[])
 
     // load dictionary
 
-    //TODO: What if dictSize is more than a million? 
-    int dictSize = 1000000;
+    int dictSize = 10000;
     int loadedWords = 0;
-    char *dictionary[dictSize];
+    char (*dictionary)[maxLength] = malloc(dictSize * sizeof(word));
 
     while (fgets(word, sizeof(word), file))
     {
         upper(word);
         // makes a seperate instanse of the word so no weird pointer stuff happens to it
-        dictionary[loadedWords++] = strdup(word);
+        strcpy(dictionary[loadedWords++], (word));
+        if (loadedWords >= dictSize)
+        {
+            dictSize*=2;
+            dictionary = realloc(dictionary, dictSize * sizeof(word));
+        }
     }
     fclose(file);
 
