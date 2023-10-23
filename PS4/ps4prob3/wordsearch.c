@@ -8,74 +8,92 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <sys/signal.h>
 
-// converts something to uppercase
-void upper(char *str)
-{
-    for (; *str; ++str)
-        *str = toupper(*str);
+int matchedwords = 0;
+
+void handler(int s) {
+  fprintf(stderr, "Matched %d words\n", matchedwords);
+  exit(0);
 }
 
-int main(int argc, char *argv[])
+// converts something to uppercase
+void upper(char* str)
 {
-    int maxLength = 100;
+  for (; *str; ++str)
+    *str = toupper(*str);
+}
 
-    // if argc is not 2, someone messed up, and it's not me.
-    if (argc != 2)
-    {
-        fprintf(stderr, "Usage: %s dictionary_file\n", argv[0]);
-        return 1;
+int main(int argc, char* argv[])
+{
+  signal(SIGPIPE, handler);
+  int maxLength = 100;
+
+  // if argc is not 2, someone messed up, and it's not me.
+  if (argc != 2)
+  {
+    fprintf(stderr, "Usage: %s dictionary_file\n", argv[0]);
+    return 1;
+  }
+
+  // attempt opening the file
+  FILE* file = fopen(argv[1], "r");
+  if (!file)
+  {
+    fprintf(stderr, "Error opening file %s: %s\n", argv[1], strerror(errno));
+    return 1;
+  }
+
+  // assume 100 is the largest size
+  char word[maxLength];
+
+  // load dictionary
+
+  int dictSize = 10000;
+  int loadedWords = 0;
+  int rejectedWords = 0;
+  char(* dictionary)[maxLength] = malloc(dictSize * sizeof(word));
+
+  while (fgets(word, sizeof(word), file))
+  {
+    upper(word);
+    for (int i = 0; i < strlen(word); i++) {
+      if (!isalpha(word[i])) {
+        ++rejectedWords;
+        continue;
+      }
     }
-
-    // attempt opening the file
-    FILE *file = fopen(argv[1], "r");
-    if (!file)
+    // makes a seperate instanse of the word so no weird pointer stuff happens to it
+    strcpy(dictionary[loadedWords++], (word));
+    if (loadedWords >= dictSize)
     {
-        fprintf(stderr, "Error opening file %s: %s\n", argv[1], strerror(errno));
-        return 1;
+      dictSize*=2;
+      dictionary = realloc(dictionary, dictSize * sizeof(word));
     }
+  }
+  fclose(file);
 
-    // assume 100 is the largest size
-    char word[maxLength];
+  fprintf(stderr, "Accepted %d words, rejected %d\n", loadedWords, rejectedWords);
 
-    // load dictionary
-
-    int dictSize = 10000;
-    int loadedWords = 0;
-    char (*dictionary)[maxLength] = malloc(dictSize * sizeof(word));
-
-    while (fgets(word, sizeof(word), file))
+  // get all the words line by line
+  while (fgets(word, sizeof(word), stdin))
+  {
+    // converts everything to uppercase
+    upper(word);
+    // look for word in the list
+    for (int i = 0; i < loadedWords; i++)
     {
-        upper(word);
-        // makes a seperate instanse of the word so no weird pointer stuff happens to it
-        strcpy(dictionary[loadedWords++], (word));
-        if (loadedWords >= dictSize)
-        {
-            dictSize*=2;
-            dictionary = realloc(dictionary, dictSize * sizeof(word));
-        }
+      // case we find it
+      if (strcmp(word, dictionary[i]) == 0)
+      {
+        fprintf(stdout, "%s", word);
+        fflush(stdout);
+        ++matchedwords;
+        break;
+      }
     }
-    fclose(file);
+  }
 
-    int matchedwords = 0;
-    // get all the words line by line
-    while (fgets(word, sizeof(word), stdin))
-    {
-        // converts everything to uppercase
-        upper(word);
-        // look for word in the list
-        for (int i = 0; i < loadedWords; i++)
-        {
-            // case we find it
-            if (strcmp(word, dictionary[i]) == 0)
-            {
-                fprintf(stdout, "%s", word);
-                ++matchedwords;
-                break;
-            }
-        }
-    }
-
-    fprintf(stderr, "Matched %d words\n", matchedwords);
-    return 0;
+  fprintf(stderr, "Matched %d words\n", matchedwords);
+  return 0;
 }
