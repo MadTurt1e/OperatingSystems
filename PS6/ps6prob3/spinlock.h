@@ -1,5 +1,5 @@
 // spinlock.h
-#include <tas.h>
+#include "tas.h"
 
 //all the stuff we might need for a spinlock
 struct spinlock
