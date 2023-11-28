@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
-#include <unistd.h>
-#include <errno.h>
 #include <string.h>
 #include <sys/wait.h>
 #include <fcntl.h>
@@ -23,7 +21,7 @@ int main(int argc, char *argv[])
     // quick check to make sure we actually put down a good item.
     if (argc != 3)
     {
-        printf("Usage: %s [Child Quantity] [Times to Repeat]\n", argv[0]);
+        printf("\e[0;31mUsage: %s [number of children] [repitition times]\n\e[0m", argv[0]);
         return 1;
     }
 
@@ -65,10 +63,12 @@ int main(int argc, char *argv[])
         wait(NULL);
     }
 
-    //Repeat this for the case we don't use spin locks
+   
     printf("Final count: %d\n", shared->count);
     printf("Expected count: %d\n", childQuant * repQuant);
 
+    // Repeat this for the case we don't use spin locks
+    shared->count = 0;
     // do however many times we need to.
     for (int i = 0; i < childQuant; i++)
     {
@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
     }
 
     // Print out the final count, and the expected count, I guess.
-    printf("Final count: %d\n", shared->count);
+    printf("Bad Case\nFinal count: %d\n", shared->count);
     printf("Expected count: %d\n", childQuant * repQuant);
 
     return 0;

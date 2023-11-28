@@ -1,6 +1,8 @@
 // spinlock.c
-#include "spinlock.h"
 #include <sched.h>
+
+#include "spinlock.h"
+#include "tas.h"
 
 extern int tas(volatile char *lock);
 

@@ -1,5 +1,7 @@
-// spinlock.h
-#include "tas.h"
+#ifndef __SPINLOCK_H
+#define __SPINLOCK_H
+
+#include <unistd.h>
 
 //all the stuff we might need for a spinlock
 struct spinlock
@@ -15,3 +17,5 @@ struct spinlock
 
 void spin_lock(struct spinlock *l);
 void spin_unlock(struct spinlock *l);
+
+#endif
