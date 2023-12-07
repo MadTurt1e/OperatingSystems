@@ -11,12 +11,11 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 #include <fcntl.h>
-#include <asm-generic/mman-common.h>
 
+#include <pthread.h>
 #include <signal.h>
 
-//we have to use a heccin mask
-sigset_t mask;
+#include <asm-generic/mman-common.h>
 
 // creates the fifo datastructure with anything it may need
 void fifo_init(struct fifo *f)
@@ -29,30 +28,44 @@ void fifo_init(struct fifo *f)
     // Step 2: reset the number of stuff in the fifo
     f->count = 0;
 
-    //signal stuff
-    sigfillset(&mask);
-    sigdelset(&mask, SIGUSR1);
+    // Step 3: Do pthread stuff
+    pthread_mutex_init(&f->mutex, NULL);
+    pthread_cond_init(&f->full, NULL);
+    pthread_cond_init(&f->empty, NULL);
 
+    f->queuePos = 0;
+    f->nowServing = 0;
     // hopefully that's it.
 }
 
 // add stuff to the fifo unless fifo is full.
 void fifo_wr(struct fifo *f, unsigned long d)
 {
-    
+    int queue;
     // While we're here, we want nothing to be happening
     spin_lock(&f->lock);
 
     // um acktually the buffer is full
     while (f->count == MYFIFO_BUFSIZ)
     {
+        // get this item a spot in the queue
+        queue = f->queuePos++;
+
         fprintf(stderr, "writer state: r %d w%d count%d\n", f->readLoc, f->writeLoc, f->count);
         // unlock the spinlock
         spin_unlock(&f->lock);
 
         // block until the array is not full
-        sigsuspend(&mask);
+        pthread_cond_wait(&f->full, &f->mutex);
 
+        // if it is not the turn, we block until it is
+        while (queue != f->nowServing)
+        {
+            pthread_cond_wait(&f->atPos, &f->mutex);
+        }
+
+        //send a signal indicating that the next item can try their luck
+        pthread_cond_signal(&f->atPos);
         // okay we're done blocking: Let's see if the buffer is still full
         spin_lock(&f->lock);
     }
@@ -66,9 +79,9 @@ void fifo_wr(struct fifo *f, unsigned long d)
     f->count++;
 
     // Indicate the thing is not empty anymore
-    pthread_kill(gettid(), SIGUSR1);
-    
-    // Release the sp inlock
+    pthread_cond_signal(&f->empty);
+
+    // Release the spinlock
     spin_unlock(&f->lock);
 }
 
@@ -86,11 +99,9 @@ unsigned long fifo_rd(struct fifo *f)
     {
         fprintf(stderr, "reader state: r %d w%d count%d\n", f->readLoc, f->writeLoc, f->count);
         // we release the spinlock
-        
         spin_unlock(&f->lock);
-
         // block until the array is not empty
-        sigsuspend(&mask);
+        pthread_cond_wait(&f->empty, &f->mutex);
 
         // recheck to see if we actually have something
         spin_lock(&f->lock);
@@ -103,7 +114,7 @@ unsigned long fifo_rd(struct fifo *f)
     f->count--;
 
     // signal that the thing is no longer full
-    pthread_kill(gettid(), SIGUSR1);
+    pthread_cond_signal(&f->full);
 
     // Release the spinlock
     spin_unlock(&f->lock);

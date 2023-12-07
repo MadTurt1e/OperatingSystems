@@ -21,11 +21,19 @@ struct fifo
     int readLoc;
     int writeLoc;
 
+    //some mutex stuff
+    pthread_cond_t full, empty, atPos;
+    pthread_mutex_t mutex;
+
     //we wanna be tracking the number of stuff in the fifo
     int count;
 
     //spinlock
     struct spinlock lock;
+
+    //write queue
+    int queuePos;
+    int nowServing;
 };
 
 /* Initialize the shared memory FIFO *f including any required underlying
