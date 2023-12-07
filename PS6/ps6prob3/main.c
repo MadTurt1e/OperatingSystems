@@ -12,7 +12,8 @@
 
 // suggested amounts
 int writerCount = 8;
-unsigned long iterations = 32768;
+
+unsigned long iterations = 100;
 
 // data block that will be shared
 struct fifo *shared_fifo;
@@ -25,7 +26,6 @@ void writer(int id)
     {
         // write to the thing - this math makes sure it is pseudo sequential (or at least we can kind of trace it back)
         fifo_wr(shared_fifo, (id * iterations) + i);
-        // fprintf(stderr, "id%d, iteration%lu, write%lu\n", id, i, (id * iterations) + i);
     }
 
     // debug message
@@ -54,7 +54,7 @@ void reader(int id)
         // whatever we get better be what we expect
         if (received % iterations != expected[writer])
         {
-            fprintf(stderr, "Read problem: Writer %d out of sequence. Expected %lu, got %lu\n", writer, expected[writer], received%iterations);
+            fprintf(stderr, "Read problem: Writer %d out of sequence. Expected %lu, got %lu\n", writer, expected[writer], received % iterations);
         }
         ++expected[writer];
     }
@@ -92,9 +92,10 @@ int main()
         }
     }
 
+    // the code does break with a higher reader count, but this is because it would be another problem entirely to check for out of sequence writers with multiple readers
     int readerCount = 1;
     // read immediately after we finish forking everything
-    for (int i = 0; i < 1; ++i)
+    for (int i = 0; i < readerCount; ++i)
     {
         // fork as many times as necessary
         switch (fork())
