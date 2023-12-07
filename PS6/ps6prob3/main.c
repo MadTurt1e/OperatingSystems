@@ -12,7 +12,7 @@
 
 // suggested amounts
 int writerCount = 8;
-unsigned long iterations = 10000;
+unsigned long iterations = 32768;
 
 // data block that will be shared
 struct fifo *shared_fifo;
@@ -121,7 +121,7 @@ int main()
     // this is actually waiting for everything to die, not just the writer children
     for (int i = 0; i < writerCount + readerCount; ++i)
     {
-        fprintf(stderr, "process %d reaped\n", wait(NULL));
+        wait(NULL);
     }
     return 0;
 }

@@ -18,7 +18,6 @@
 
 void sig_handler(int signum)
 {
-    fprintf(stderr, "Signal recieved\n");
     return;
 }
 // creates the fifo datastructure with anything it may need
@@ -36,7 +35,7 @@ void fifo_init(struct fifo *f)
     sigfillset(f->mask);
     sigdelset(f->mask, SIGUSR1);
 
-    //block all sigusr1 signals normally
+    // block all sigusr1 signals normally
     sigset_t normalMask;
     sigemptyset(&normalMask);
     sigprocmask(SIG_SETMASK, &normalMask, NULL);
@@ -52,39 +51,46 @@ void fifo_init(struct fifo *f)
 void fifo_wr(struct fifo *f, unsigned long d)
 {
     signal(SIGUSR1, sig_handler);
+    int queuePos = 0;
 
-    int queue;
-    // While we're here, we want nothing to be happening
+
+    // STEP 1: NOTHING CAN HAPPEN
     spin_lock(&f->lock);
 
-    // um acktually the buffer is full
+    // STEP 2: CHECK IF BUFFER IS FULL
     while (f->count == MYFIFO_BUFSIZ)
     {
 
-        fprintf(stderr, "writer state: r %d w%d count%d\n", f->readLoc, f->writeLoc, f->count);
 
-        // add something to the queue
+        // WE MUST WAIT FOR A SPACE TO EMPTY OUT NOW
+        spin_unlock(&f->lock);
         spin_lock(&f->queuelock);
+
         f->full = true;
+        // ADD TO THE PROCESS QUEUE
         while (f->full)
         {
-            f->queue[f->queueLoc] = getpid();
-            f->queueLoc = (f->writeLoc + 1) % NPROC;
-            spin_unlock(&f->lock);
+            if (queuePos != 0)
+                f->queue[f->queueLoc] = getpid();
+            queuePos = f->queueLoc;
+
             spin_unlock(&f->queuelock);
 
             sigsuspend(f->mask);
+
+            spin_lock(&f->queuelock);
         }
 
-        // we release the spinlock
+        //INDICATE THAT WE HAVE TAKEN THIS OUT OF THE QUEUE
+        queuePos = 0;
+
+        // RELEASE QUEUE SPINLOCK
         spin_unlock(&f->queuelock);
 
-        // okay we're done blocking: Let's see if the buffer is still full
+        // RECHECK TO SEE IF THE BUFFER IS FULL
         spin_lock(&f->lock);
-        fprintf(stderr, "W: buffer bypassed\n");
     }
 
-    
     // Actual critical region
 
     // Write, than increase the write count
@@ -99,7 +105,6 @@ void fifo_wr(struct fifo *f, unsigned long d)
     if (f->queueLoc != f->dequeueLoc)
     {
         kill(f->queue[f->dequeueLoc], SIGUSR1);
-        fprintf(stderr, "W: signal sent to %d\n", f->queue[f->dequeueLoc]);
         f->queueLoc = (f->dequeueLoc + 1) % NPROC;
     }
 
@@ -110,24 +115,28 @@ void fifo_wr(struct fifo *f, unsigned long d)
 // read stuff from the fifo - also happens to be the only way to clear out the fifo for writers to do stuff
 unsigned long fifo_rd(struct fifo *f)
 {
-    fprintf(stderr, "start state: r %d w%d count%d\n", f->readLoc, f->writeLoc, f->count);
+    signal(SIGUSR1, sig_handler);
+
     // output bit
     unsigned long output;
+    int queuePos = 0;
+
     // Acquire the spinlock
     spin_lock(&f->lock);
-    fprintf(stderr, "R: spinlock bypassed\n");
     // If we don't have anything in the spinlock
     while (f->count == 0)
     {
-        fprintf(stderr, "reader state: r %d w%d count%d\n", f->readLoc, f->writeLoc, f->count);
+        spin_unlock(&f->lock);
 
         // add something to the queue
         spin_lock(&f->queuelock);
         f->empty = true;
-        fprintf(stderr, "R: queue spinlock bypassed\n");
         while (f->empty)
         {
-            f->queue[f->queueLoc] = getpid();
+            if (queuePos != 0)
+                f->queue[f->queueLoc] = getpid();
+            queuePos = f->queueLoc;
+
             f->queueLoc = (f->queueLoc + 1) % NPROC;
             spin_unlock(&f->lock);
             spin_unlock(&f->queuelock);
@@ -136,17 +145,13 @@ unsigned long fifo_rd(struct fifo *f)
             spin_lock(&f->queuelock);
         }
 
-        fprintf(stderr, "R: signals bypassed\n");
-
+        queuePos = 0;
         // we release the spinlock
         spin_unlock(&f->queuelock);
-        spin_unlock(&f->lock);
 
         // recheck to see if we actually have something
         spin_lock(&f->lock);
     }
-
-    fprintf(stderr, "R: count check success\n");
     // do an actual read
     output = f->buffer[f->readLoc];
     // update the read position
@@ -159,9 +164,7 @@ unsigned long fifo_rd(struct fifo *f)
     if (f->queueLoc != f->dequeueLoc)
     {
         kill(f->queue[f->dequeueLoc], SIGUSR1);
-        fprintf(stderr, "R: signal sent to %d\n", f->queue[f->dequeueLoc]);
         f->queueLoc = (f->dequeueLoc + 1) % NPROC;
-
     }
     spin_unlock(&f->queuelock);
 
