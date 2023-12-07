@@ -9,6 +9,8 @@
 
 #include <pthread.h>
 
+#include "spinlock.h"
+
 //fifo is a struct
 struct fifo
 {
@@ -19,12 +21,11 @@ struct fifo
     int readLoc;
     int writeLoc;
 
-    //some mutex stuff
-    pthread_cond_t full, empty;
-    pthread_mutex_t mutex;
-
     //we wanna be tracking the number of stuff in the fifo
     int count;
+
+    //spinlock
+    struct spinlock lock;
 };
 
 /* Initialize the shared memory FIFO *f including any required underlying

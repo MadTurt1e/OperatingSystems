@@ -12,7 +12,7 @@
 
 // suggested amounts
 int writerCount = 8;
-unsigned long iterations = 32768;
+unsigned long iterations = 1000;
 
 // data block that will be shared
 struct fifo *shared_fifo;
@@ -23,33 +23,40 @@ void writer(int id)
     // just iterate through everything
     for (unsigned long i = 0; i < iterations; ++i)
     {
-        // write to the thing - this math makes sure it is pseudo sequential (or at least we can trace it back)
+        // write to the thing - this math makes sure it is pseudo sequential (or at least we can kind of trace it back)
         fifo_wr(shared_fifo, (id * iterations) + i);
+        // fprintf(stderr, "id%d, iteration%lu, write%lu\n", id, i, (id * iterations) + i);
     }
 
-    //debug message
-    fprintf(stderr, "Writer %d completed", id);
+    // debug message
+    fprintf(stderr, "Writer %d completed\n", id);
 }
 
 // reads out the fifo until it's empty
 void reader(int id)
 {
+    unsigned long expected[writerCount];
     unsigned long received = 0;
     int writer;
 
-    for (unsigned long i = 0; i < iterations; ++i)
+    for (int i = 0; i < writerCount; ++i)
+    {
+        expected[i] = 0;
+    }
+
+    for (unsigned long i = 0; i < writerCount * iterations; ++i)
     {
         // read from the fifo
         received = fifo_rd(shared_fifo);
 
         // figure out who the writer is
-        writer = i / iterations;
-
+        writer = received / iterations;
         // whatever we get better be what we expect
-        if (received != (writer * iterations) + i)
+        if (received % iterations != expected[writer])
         {
-            fprintf(stderr, "Read problem: Writer %d out of sequence. Expected %lu, got %lu\n", id, i, received);
+            fprintf(stderr, "Read problem: Writer %d out of sequence. Expected %lu, got %lu\n", writer, expected[writer], received%iterations);
         }
+        ++expected[writer];
     }
 
     // getting here is the good case
@@ -85,14 +92,16 @@ int main()
         }
     }
 
-    //read immediately after we finish forking everything
-    for (int i = 0; i < writerCount; ++i)
+    int readerCount = 1;
+    // read immediately after we finish forking everything
+    for (int i = 0; i < 1; ++i)
     {
         // fork as many times as necessary
         switch (fork())
         {
         // child case
         case 0:
+            fprintf(stderr, "Reader Started\n");
             reader(i);
             exit(0);
         // messed up case
@@ -108,5 +117,11 @@ int main()
     fprintf(stderr, "All streams done\n");
 
     fprintf(stderr, "Waiting for writer children to die\n");
+
+    // this is actually waiting for everything to die, not just the writer children
+    for (int i = 0; i < writerCount + readerCount; ++i)
+    {
+        wait(NULL);
+    }
     return 0;
 }
