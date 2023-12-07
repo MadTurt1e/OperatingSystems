@@ -8,8 +8,11 @@
 #define NPROC 64
 
 #include <pthread.h>
+#include <signal.h>
 
 #include "spinlock.h"
+#include <stdbool.h>
+
 
 //fifo is a struct
 struct fifo
@@ -22,8 +25,7 @@ struct fifo
     int writeLoc;
 
     //some mutex stuff
-    pthread_cond_t full, empty, atPos;
-    pthread_mutex_t mutex;
+    bool full, empty;
 
     //we wanna be tracking the number of stuff in the fifo
     int count;
@@ -31,9 +33,14 @@ struct fifo
     //spinlock
     struct spinlock lock;
 
-    //write queue
-    int queuePos;
-    int nowServing;
+    //signal mask
+    sigset_t *mask;
+
+    //queue buffer
+    pid_t queue[NPROC];
+    int queueLoc;
+    int dequeueLoc;
+    struct spinlock queuelock;
 };
 
 /* Initialize the shared memory FIFO *f including any required underlying
