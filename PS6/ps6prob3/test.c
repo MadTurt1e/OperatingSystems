@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
-#include <string.h>
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <asm-generic/mman-common.h>
