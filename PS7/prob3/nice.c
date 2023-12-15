@@ -60,6 +60,7 @@ int main(int argc, char* argv[]) {
           }
         }
 
+        //set niceness of the child accordingly. 
         setpgid(pid, children[0]);
     }
   }

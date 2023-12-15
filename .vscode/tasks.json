@@ -8,7 +8,6 @@
                 "-fdiagnostics-color=always",
                 "-g",
                 "${fileDirname}/*.c",
-                "tas64.S",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}"
             ],
